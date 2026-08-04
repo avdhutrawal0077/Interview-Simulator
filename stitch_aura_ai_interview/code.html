@@ -1,0 +1,213 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ZenInterview AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#656466",
+                        "on-secondary-container": "#004615",
+                        "on-primary": "#2f3132",
+                        "background": "#121317",
+                        "on-secondary-fixed-variant": "#00531a",
+                        "surface-tint": "#c6c6c8",
+                        "surface-container-lowest": "#0d0e12",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e3e2e7",
+                        "secondary-fixed": "#6cff82",
+                        "on-secondary-fixed": "#002106",
+                        "tertiary-fixed": "#e4e2e4",
+                        "surface-container-low": "#1a1b1f",
+                        "tertiary-fixed-dim": "#c8c6c8",
+                        "on-background": "#e3e2e7",
+                        "primary-fixed-dim": "#c6c6c8",
+                        "primary": "#ffffff",
+                        "inverse-on-surface": "#2f3034",
+                        "on-primary-fixed-variant": "#454749",
+                        "on-surface-variant": "#c5c7c9",
+                        "on-secondary": "#003910",
+                        "on-primary-container": "#636466",
+                        "surface-variant": "#343539",
+                        "outline-variant": "#44474a",
+                        "on-error-container": "#ffdad6",
+                        "outline": "#8f9194",
+                        "surface-container-highest": "#343539",
+                        "surface-dim": "#121317",
+                        "primary-fixed": "#e2e2e4",
+                        "secondary-fixed-dim": "#47e266",
+                        "primary-container": "#e2e2e4",
+                        "secondary": "#47e266",
+                        "surface-container-high": "#292a2e",
+                        "tertiary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#474649",
+                        "secondary-container": "#09bf49",
+                        "tertiary-container": "#e4e2e4",
+                        "inverse-primary": "#5d5e60",
+                        "surface": "#121317",
+                        "on-primary-fixed": "#1a1c1d",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#e3e2e7",
+                        "surface-container": "#1e1f23",
+                        "surface-bright": "#38393d",
+                        "on-tertiary": "#303032",
+                        "on-tertiary-fixed": "#1b1b1d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "24px",
+                        "max-width-desktop": "1200px",
+                        "section-margin": "48px",
+                        "stack-gap": "16px",
+                        "element-gap": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "title-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["17px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "body-md": ["15px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "letterSpacing": "0em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0A0A0A;
+            color: #F5F5F7;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .app-card {
+            background-color: #1C1C1E;
+            border: 1px solid #2C2C2E;
+            box-shadow: 0 0 40px rgba(255,255,255,0.02);
+        }
+        .hairline-vertical {
+            background-color: #2C2C2E;
+            width: 1px;
+        }
+        .user-bubble {
+            background-color: #2C2C2E;
+            border-radius: 14px 14px 2px 14px;
+        }
+        .ai-bubble {
+            border-left: 2px solid #3A3A3C;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #30D158;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #30D158;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Scrollbar styles for the transcript */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #3A3A3C;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 md:p-8 overflow-hidden bg-[#0A0A0A]">
+<!-- Main Application Canvas -->
+<main class="w-full max-w-[1200px] h-[85vh] min-h-[600px] app-card rounded-[24px] flex flex-col md:flex-row overflow-hidden relative"><div class="absolute top-0 left-0 w-full z-20 flex flex-col">
+<div class="w-full h-1 bg-[#2C2C2E]">
+<div class="h-full bg-[#F5F5F7]" style="width: 37%"></div>
+</div>
+<div class="px-6 pt-1">
+<span class="text-[#8E8E93] text-[10px] font-medium uppercase tracking-widest">Question 3 of 8</span>
+</div>
+</div>
+<!-- Left Column: Primary Interaction (70%) -->
+<section class="flex-1 flex flex-col relative h-full bg-[#1C1C1E]">
+<!-- Top App Bar (Header) -->
+<header class="w-full px-6 py-5 flex justify-between items-center z-10 pt-8">
+<h1 class="text-[#F5F5F7] font-semibold text-lg tracking-tight">MockMate</h1>
+<div class="flex items-center gap-4 md:gap-6"><div class="flex items-center gap-2 px-3 py-1 bg-[#2C2C2E] border border-[#3A3A3C] rounded-full">
+<span class="material-symbols-outlined text-[14px] text-[#30D158]">check_circle</span>
+<span class="text-[#F5F5F7] text-[11px] font-medium">Good Pacing</span>
+</div>
+<span class="text-[#8E8E93] font-mono text-sm tracking-wider">00:15:24</span>
+<button class="px-4 py-2 bg-[#2C2C2E] border border-[#3A3A3C] rounded-full text-[#F5F5F7] text-sm font-medium transition-colors hover:text-red-400 hover:border-red-900 focus:outline-none">
+                        End Interview
+                    </button>
+</div>
+</header>
+<!-- Center: Visualizer -->
+<div class="flex-1 flex items-center justify-center relative w-full h-full p-8"></div>
+<!-- Bottom controls placeholder (minimal) -->
+</section>
+<!-- Vertical Divider -->
+<div class="hidden md:block hairline-vertical h-full z-10 relative"></div>
+<!-- Right Column: Context/Transcript (30%) -->
+<aside class="w-full md:w-[360px] h-full flex flex-col bg-[#1C1C1E] border-t md:border-t-0 border-[#2C2C2E]">
+<!-- Right Header -->
+<header class="px-6 py-5 flex items-center justify-between border-b border-[#2C2C2E]">
+<h2 class="text-[#F5F5F7] font-semibold text-base">Transcript</h2>
+<div class="flex items-center gap-2">
+<div class="status-dot"></div>
+<span class="text-[#8E8E93] text-xs font-medium uppercase tracking-wider">Listening...</span>
+</div>
+</header>
+<!-- Transcript Canvas -->
+<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar">
+<!-- AI Message -->
+<div class="flex flex-col gap-1 w-full pl-3 ai-bubble"><div class="flex items-center justify-between w-full mb-1"><span class="text-[#8E8E93] text-[11px] font-medium tracking-widest uppercase">Interviewer</span><button class="inline-flex items-center justify-center w-6 h-6 bg-[#2C2C2E] border border-[#3A3A3C] rounded-full transition-colors group"><span class="material-symbols-outlined text-[14px] text-[#8E8E93] group-hover:text-[#F5F5F7]">refresh</span></button></div><p class="text-[#EBEBF5] text-sm leading-relaxed font-light">That's a solid approach to optimizing the React render cycle. Moving on to system design, how would you architect a real-time collaborative document editor?</p><div class="mt-4 pt-3 border-t border-[#2C2C2E]"><div class="flex items-center gap-1 text-[#8E8E93] text-[11px] font-medium cursor-pointer"><span class="">What this question is really testing</span><span class="material-symbols-outlined text-[14px]">arrow_forward</span></div><p class="mt-1 text-[#8E8E93] text-[11px] italic leading-relaxed">Evaluating your ability to handle conflicting edits and data consistency in real-time environments.</p></div></div>
+<!-- User Message -->
+<div class="flex flex-col gap-1 w-full items-end mt-2">
+<span class="text-[#8E8E93] text-[11px] font-medium tracking-widest uppercase mr-1">You</span>
+<div class="user-bubble p-3 max-w-[90%] shadow-sm">
+<p class="text-[#F5F5F7] text-sm leading-relaxed">
+                            For a collaborative editor, I'd start with Operational Transformation or CRDTs for resolving conflicting edits. On the backend, we'd need WebSocket connections for real-time sync, likely fronted by a load balancer...
+                        </p>
+</div>
+</div>
+<!-- AI Message (Active) -->
+<div class="flex flex-col gap-1 w-full pl-3 ai-bubble mt-2 opacity-80">
+<span class="text-[#8E8E93] text-[11px] font-medium tracking-widest uppercase">Interviewer</span>
+<p class="text-[#EBEBF5] text-sm leading-relaxed font-light flex items-center gap-1">
+<span class="inline-block w-1 h-4 bg-[#8E8E93] animate-pulse"></span>
+</p>
+</div>
+</div>
+</aside>
+</main>
+
+
+</body></html>
