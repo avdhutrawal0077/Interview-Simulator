@@ -1,5 +1,5 @@
 {
-  "name": "next-round-interview-simulator",
+  "name": "get-hired-interview-simulator",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,11 +10,14 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.30.4",
+    "three": "^0.164.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",

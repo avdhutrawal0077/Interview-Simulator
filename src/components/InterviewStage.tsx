@@ -1,15 +1,19 @@
 import React from 'react';
 import { StatusPill } from './StatusPill';
+import { VoiceSphere } from './VoiceSphere';
+import { SphereState } from '../types/interview';
 
 interface InterviewStageProps {
   appName?: string;
   pacingStatus?: string;
   elapsedTime?: string;
   onEndInterview?: () => void;
+  sphereState?: SphereState;
+  audioLevel?: number;
 }
 
 export const InterviewStage: React.FC<InterviewStageProps> = ({
-  appName = 'NextRound',
+  appName = 'GetHired',
   pacingStatus = 'Good Pacing',
   elapsedTime = '00:15:24',
   onEndInterview,
@@ -38,9 +42,9 @@ export const InterviewStage: React.FC<InterviewStageProps> = ({
         </div>
       </header>
 
-      {/* Center: Visualizer (Empty flex container placeholder per spec) */}
-      <div className="flex-1 flex items-center justify-center relative w-full h-full p-8">
-        {/* Intentionally left empty as per prompt scope requirements */}
+      {/* Center: Visualizer */}
+      <div className="flex-1 flex items-center justify-center relative w-full h-full p-8 overflow-hidden">
+        <VoiceSphere voiceLevel={0} active={false} />
       </div>
     </section>
   );

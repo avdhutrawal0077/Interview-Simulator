@@ -44,7 +44,7 @@
   100% { opacity: 1; transform: scale(1); }
 }
 
-/* Custom scrollbar for transcript */
+/* Custom scrollbar for transcript & sidebar */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -54,4 +54,80 @@
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #3A3A3C;
   border-radius: 10px;
+}
+
+/* Landing page radial glow */
+.landing-glow {
+  position: relative;
+}
+.landing-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 560px;
+  height: 360px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(48, 209, 88, 0.10) 0%,
+    rgba(48, 209, 88, 0.03) 50%,
+    transparent 75%
+  );
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* History row */
+.history-row {
+  transition: background-color 0.15s ease;
+  border-radius: 8px;
+}
+.history-row:hover {
+  background-color: #1e1f23;
+}
+.history-row:active {
+  background-color: #292a2e;
+}
+
+/* Pill-shaped upload bar */
+.upload-bar {
+  background-color: #1C1C1E;
+  border: 1px solid #2C2C2E;
+  border-radius: 12px;
+  transition: border-color 0.2s ease;
+  position: relative;
+  z-index: 1;
+}
+.upload-bar:focus-within {
+  border-color: #3A3A3C;
+}
+
+/* Role dropdown menu */
+.role-menu {
+  background-color: #2C2C2E;
+  border: 1px solid #3A3A3C;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.role-menu-item {
+  transition: background-color 0.12s ease;
+  border-radius: 8px;
+}
+.role-menu-item:hover {
+  background-color: #3A3A3C;
+}
+
+/* Filename chip */
+.file-chip {
+  background-color: #2C2C2E;
+  border: 1px solid #3A3A3C;
+  border-radius: 8px;
+  animation: chip-in 0.2s ease-out;
+}
+
+@keyframes chip-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }

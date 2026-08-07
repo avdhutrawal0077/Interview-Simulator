@@ -1,5 +1,5 @@
 import React from 'react';
-import { Message } from '../types/interview';
+import { Message, SphereState } from '../types/interview';
 import { InterviewStage } from './InterviewStage';
 import { TranscriptPanel } from './TranscriptPanel';
 
@@ -15,12 +15,14 @@ interface InterviewShellProps {
   onToggleListening?: () => void;
   onRefreshMessage?: (id: string) => void;
   onEndInterview?: () => void;
+  sphereState?: SphereState;
+  audioLevel?: number;
 }
 
 export const InterviewShell: React.FC<InterviewShellProps> = ({
   questionIndex,
   totalQuestions,
-  appName = 'NextRound',
+  appName = 'GetHired',
   pacingStatus = 'Good Pacing',
   elapsedTime = '00:15:24',
   messages,
@@ -29,6 +31,8 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
   onToggleListening,
   onRefreshMessage,
   onEndInterview,
+  sphereState = 'idle',
+  audioLevel = 0,
 }) => {
   const progressPercentage = Math.min(
     100,
@@ -64,6 +68,8 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
         pacingStatus={pacingStatus}
         elapsedTime={elapsedTime}
         onEndInterview={onEndInterview}
+        sphereState={sphereState}
+        audioLevel={audioLevel}
       />
 
       {/* Hairline Vertical Divider */}
