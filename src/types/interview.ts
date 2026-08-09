@@ -40,6 +40,14 @@ export const JOB_ROLES: JobRole[] = [
   'Product Manager',
 ];
 
+/** Category sub-scores breakdown for report analytics */
+export interface CategoryScores {
+  technical: number;
+  communication: number;
+  bodyLanguage: number;
+  roleFit: number;
+}
+
 /** Lightweight session summary for history sidebar */
 export interface SessionSummary {
   sessionId: string;
@@ -48,6 +56,7 @@ export interface SessionSummary {
   overallScore: number;   // 0–100
   questionsCompleted: number;
   totalQuestions: number;
+  categoryScores?: CategoryScores;
 }
 
 /** Shape for "Save Summary" JSON export */
@@ -69,4 +78,5 @@ export interface SessionFullExport {
   totalQuestions: number;
   elapsedTime: string;
   messages: Message[];
+  categoryScores?: CategoryScores;
 }

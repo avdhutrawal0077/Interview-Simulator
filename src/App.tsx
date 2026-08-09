@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { InterviewShell } from './components/InterviewShell';
 import { LandingShell } from './components/LandingShell';
-import { ExportButtons } from './components/ExportButtons';
 import { Message, JobRole, SessionSummary, SphereState } from './types/interview';
 import { generateSessionId, saveSession } from './utils/sessionStorage';
 
@@ -28,19 +27,18 @@ function InterviewPage() {
   const [isListening, setIsListening] = useState(true);
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
-  const [isInterviewEnded, setIsInterviewEnded] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
   // Live timer logic
   useEffect(() => {
-    if (isInterviewEnded || !isListening || showEndConfirmation) return;
+    if (!isListening || showEndConfirmation) return;
 
     const interval = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isInterviewEnded, isListening, showEndConfirmation]);
+  }, [isListening, showEndConfirmation]);
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -76,10 +74,9 @@ function InterviewPage() {
     setShowEndConfirmation(true);
   };
 
-  // Confirm ending interview
+  // Confirm ending interview -> save session and navigate directly to home screen
   const handleConfirmEndInterview = () => {
     setShowEndConfirmation(false);
-    setIsInterviewEnded(true);
 
     // Persist session to history
     const overallScore = Math.floor(60 + Math.random() * 30); // Mock score
@@ -101,18 +98,8 @@ function InterviewPage() {
       elapsedTime,
       messages,
     });
-  };
 
-  const handleRestart = () => {
-    setQuestionIndex(1);
-    setIsListening(true);
-    setMessages(initialMessages);
-    setIsInterviewEnded(false);
-    setShowEndConfirmation(false);
-    setSeconds(0);
-  };
-
-  const handleBackToHome = () => {
+    // Navigate immediately to home screen
     navigate('/');
   };
 
@@ -120,13 +107,6 @@ function InterviewPage() {
   const sphereState: SphereState = isListening ? 'listening' : 'idle';
   const [mockSphereState, setMockSphereState] = useState<SphereState | null>(null);
   const activeSphereState = mockSphereState ?? sphereState;
-
-  // Compute mock score for display (same as saved)
-  const mockScore = useMemo(
-    () => Math.floor(60 + Math.random() * 30),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isInterviewEnded]
-  );
 
   return (
     <div className="w-screen h-screen min-h-screen overflow-hidden bg-[#0A0A0A] relative flex flex-col items-center justify-center p-0">
@@ -188,7 +168,7 @@ function InterviewPage() {
         ))}
       </div>
 
-      {/* 1. End Interview Confirmation Warning Modal */}
+      {/* End Interview Confirmation Warning Modal */}
       {showEndConfirmation && (
         <div className="fixed inset-0 bg-[#0A0A0A]/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-8 max-w-md w-full flex flex-col items-center text-center gap-5 shadow-2xl">
@@ -200,7 +180,7 @@ function InterviewPage() {
                 End Interview?
               </h3>
               <p className="text-sm text-[#8E8E93] leading-relaxed">
-                Are you sure you want to end your current session? You can resume answering or end it now to generate your feedback report.
+                Are you sure you want to end your current session? You will return to the home screen and your session will be saved in history.
               </p>
             </div>
 
@@ -218,58 +198,6 @@ function InterviewPage() {
                 End Interview
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 2. End Interview Summary Modal Overlay */}
-      {isInterviewEnded && (
-        <div className="fixed inset-0 bg-[#0A0A0A]/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-8 max-w-md w-full flex flex-col items-center text-center gap-4 shadow-2xl">
-            <div className="w-12 h-12 rounded-full bg-[#2C2C2E] border border-[#3A3A3C] flex items-center justify-center text-[#30D158]">
-              <span className="material-symbols-outlined text-2xl">check_circle</span>
-            </div>
-            <h3 className="text-xl font-semibold text-[#F5F5F7]">
-              Interview Session Ended
-            </h3>
-            <p className="text-sm text-[#8E8E93] leading-relaxed">
-              You completed {questionIndex} out of {totalQuestions} questions with overall good pacing.
-            </p>
-
-            {/* Export Buttons */}
-            <ExportButtons
-              sessionId={sessionId}
-              role={role}
-              date={sessionDate}
-              overallScore={mockScore}
-              questionsCompleted={questionIndex}
-              totalQuestions={totalQuestions}
-              elapsedTime={elapsedTime}
-              messages={messages}
-            />
-
-            <div className="flex gap-3 w-full mt-2">
-              <button
-                onClick={() => setIsInterviewEnded(false)}
-                className="flex-1 py-2.5 px-4 bg-[#2C2C2E] border border-[#3A3A3C] rounded-[12px] text-[#F5F5F7] text-sm font-medium hover:bg-[#343539] transition-colors"
-              >
-                Resume
-              </button>
-              <button
-                onClick={handleRestart}
-                className="flex-1 py-2.5 px-4 bg-[#F5F5F7] text-[#0A0A0A] rounded-[12px] text-sm font-medium hover:bg-white transition-colors"
-              >
-                Restart Session
-              </button>
-            </div>
-
-            {/* Back to home link */}
-            <button
-              onClick={handleBackToHome}
-              className="text-[#8E8E93] text-[12px] hover:text-[#F5F5F7] transition-colors mt-1 cursor-pointer"
-            >
-              ← Back to Home
-            </button>
           </div>
         </div>
       )}

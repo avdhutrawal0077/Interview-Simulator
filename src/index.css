@@ -56,27 +56,32 @@
   border-radius: 10px;
 }
 
-/* Landing page radial glow */
-.landing-glow {
-  position: relative;
-}
-.landing-glow::before {
-  content: '';
+/* Central CTA ambient radial glow */
+.cta-radial-glow {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 560px;
-  height: 360px;
+  width: 540px;
+  height: 220px;
   background: radial-gradient(
     ellipse at center,
-    rgba(48, 209, 88, 0.10) 0%,
-    rgba(48, 209, 88, 0.03) 50%,
-    transparent 75%
+    rgba(245, 245, 247, 0.25) 0%,
+    rgba(245, 245, 247, 0.18) 40%,
+    rgba(245, 245, 247, 0.05) 65%,
+    transparent 85%
   );
-  filter: blur(70px);
+  filter: blur(80px);
+  -webkit-filter: blur(80px);
   pointer-events: none;
   z-index: 0;
+  border-radius: 50%;
+}
+
+
+/* Landing home CTA wrapper — provides positioning context for cta-radial-glow */
+.landing-glow {
+  position: relative;
 }
 
 /* History row */
@@ -130,4 +135,47 @@
 @keyframes chip-in {
   from { opacity: 0; transform: scale(0.9); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* Headline entrance — "mist resolving into focus" */
+/* Two separate animations run concurrently at different speeds so        */
+/* blur/opacity clearing and positional settling never finish in lockstep. */
+
+@keyframes headline-motion {
+  from {
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes headline-mist {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.headline-animate {
+  /* motion: snappier — settles at ~900ms */
+  /* mist:   slower  — blur fully clears at ~2100ms, delayed 80ms */
+  animation:
+    headline-motion  900ms  cubic-bezier(0.22, 1, 0.36, 1) both,
+    headline-mist   2100ms  cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headline-animate {
+    animation: headline-reduced 600ms ease both;
+  }
+
+  @keyframes headline-reduced {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
 }
