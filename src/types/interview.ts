@@ -3,11 +3,18 @@ export type Role = 'ai' | 'user';
 /** Visual state for the InterviewSphere orb */
 export type SphereState = 'idle' | 'listening' | 'thinking' | 'speaking';
 
+export interface TurnScores {
+  technical: number;
+  communication: number;
+  confidence: number;
+}
+
 export interface Message {
   id: string;
   role: Role;
   text: string;
   insight?: string;
+  turnScores?: TurnScores;
   isStreaming?: boolean;
   timestamp?: string;
 }
@@ -48,6 +55,25 @@ export interface CategoryScores {
   roleFit: number;
 }
 
+/** AI-generated debrief payload from the backend synthesis endpoint */
+export interface AiDebrief {
+  overall_scores: {
+    technical: number;
+    communication: number;
+    confidence: number;
+    role_fit: number;
+  };
+  body_language: {
+    eye_contact: number;
+    blink_rate: number;
+    head_stability: number;
+  };
+  strengths: string[];
+  improvements: string[];
+  debrief_narrative: string;
+  hiring_recommendation: string;
+}
+
 /** Lightweight session summary for history sidebar */
 export interface SessionSummary {
   sessionId: string;
@@ -57,6 +83,7 @@ export interface SessionSummary {
   questionsCompleted: number;
   totalQuestions: number;
   categoryScores?: CategoryScores;
+  aiDebrief?: AiDebrief;
 }
 
 /** Shape for "Save Summary" JSON export */
@@ -79,4 +106,6 @@ export interface SessionFullExport {
   elapsedTime: string;
   messages: Message[];
   categoryScores?: CategoryScores;
+  /** AI-synthesized debrief — populated when the backend /report endpoint succeeds */
+  aiDebrief?: AiDebrief;
 }

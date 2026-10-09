@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { JobRole, SessionSummary } from '../types/interview';
 import { getHistory, getFullSession } from '../utils/sessionStorage';
+import { api } from '../services/api';
 import { HistorySidebar } from './HistorySidebar';
 import { ResumeUploadBar } from './ResumeUploadBar';
 import { StartButton } from './StartButton';
@@ -14,6 +15,8 @@ export const LandingShell: React.FC = () => {
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [selectedRole, setSelectedRole] = useState<JobRole | null>(null);
   const [history, setHistory] = useState<SessionSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
   // Active report selection state
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -27,11 +30,48 @@ export const LandingShell: React.FC = () => {
     refreshHistory();
   }, []);
 
-  const handleStartInterview = () => {
-    if (!resumeFile || !selectedRole) return;
-    navigate('/interview', {
-      state: { resumeFile, role: selectedRole },
-    });
+  const handleStartInterview = async () => {
+    if (!resumeFile || !selectedRole || isLoading) return;
+
+    try {
+      setIsLoading(true);
+      setLoadingStatus('Creating interview session...');
+
+      // 1. Start session on FastAPI backend
+      const sessionRes = await api.startSession('Candidate', selectedRole);
+      const sessionId = sessionRes.sessionId;
+
+      // 2. Upload resume PDF
+      setLoadingStatus('Analyzing resume & extracting skills...');
+      await api.uploadResume(resumeFile, sessionId);
+
+      // 3. Fetch initial question from backend
+      setLoadingStatus('Generating personalized interview question...');
+      const questionRes = await api.getQuestion(sessionId);
+
+      // 4. Navigate to interview page with session context
+      navigate('/interview', {
+        state: {
+          resumeFile,
+          role: selectedRole,
+          sessionId,
+          initialQuestion: questionRes.questionText,
+          totalQuestions: questionRes.totalQuestions || 8,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to start interview:', error);
+      // Fallback navigation so UI never hangs
+      navigate('/interview', {
+        state: {
+          resumeFile,
+          role: selectedRole,
+        },
+      });
+    } finally {
+      setIsLoading(false);
+      setLoadingStatus('');
+    }
   };
 
   const handleSelectSession = (sessionId: string) => {
@@ -42,7 +82,6 @@ export const LandingShell: React.FC = () => {
     setSelectedSessionId(null);
     refreshHistory(); // pick up any newly saved sessions
   };
-
 
   // Full session data for the selected session
   const activeFullSession = useMemo(() => {
@@ -56,7 +95,7 @@ export const LandingShell: React.FC = () => {
     return history.filter((s) => s.role === activeFullSession.role);
   }, [activeFullSession, history]);
 
-  const isReady = resumeFile !== null && selectedRole !== null;
+  const isReady = resumeFile !== null && selectedRole !== null && !isLoading;
 
   return (
     <div className="w-screen h-screen min-h-screen overflow-hidden bg-[#0A0A0A] flex">
@@ -101,10 +140,17 @@ export const LandingShell: React.FC = () => {
                   onClick={handleStartInterview}
                 />
 
-                {/* Subtle hint */}
-                <p className="mt-5 text-[#8E8E93] text-[12px] text-center select-none">
-                  Upload your resume as PDF and select a target role to begin a mock interview.
-                </p>
+                {/* Loading status indicator */}
+                {isLoading ? (
+                  <div className="mt-4 flex items-center gap-2 text-[#30D158] text-xs font-medium animate-pulse">
+                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    <span>{loadingStatus}</span>
+                  </div>
+                ) : (
+                  <p className="mt-5 text-[#8E8E93] text-[12px] text-center select-none">
+                    Upload your resume as PDF and select a target role to begin a mock interview.
+                  </p>
+                )}
               </div>
             </div>
           </div>

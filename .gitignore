@@ -1,2 +1,78 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Node & Frontend
 node_modules/
 dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+
+# Vector DB & Local Storage
+chroma_db/
+chroma_data/
+*.sqlite3
+*.db
+uploads/
+temp/
+sessions/
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Documentation, Architecture, and Scratch Notes
+AI_Interview_Simulator_Architecture.pdf
+myarchitecture.md
+myfutureplan.md
+EXECUTION_PLAN.md
+ROADMAP.md
+sphere.txt
+stitch_aura_ai_interview/

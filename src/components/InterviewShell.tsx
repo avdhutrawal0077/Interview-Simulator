@@ -14,9 +14,15 @@ interface InterviewShellProps {
   isFullScreen?: boolean;
   onToggleListening?: () => void;
   onRefreshMessage?: (id: string) => void;
+  onSubmitAnswer?: (answer: string) => void;
+  isSubmitting?: boolean;
   onEndInterview?: () => void;
   sphereState?: SphereState;
   audioLevel?: number;
+  videoRef?: React.RefObject<HTMLVideoElement>;
+  inputText: string;
+  setInputText: (text: string) => void;
+  micStatus?: 'active' | 'blocked' | 'unsupported' | 'idle';
 }
 
 export const InterviewShell: React.FC<InterviewShellProps> = ({
@@ -24,15 +30,21 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
   totalQuestions,
   appName = 'GetHired',
   pacingStatus = 'Good Pacing',
-  elapsedTime = '00:15:24',
+  elapsedTime = '00:00:00',
   messages,
   isListening,
   isFullScreen = true,
   onToggleListening,
   onRefreshMessage,
+  onSubmitAnswer,
+  isSubmitting = false,
   onEndInterview,
   sphereState = 'idle',
   audioLevel = 0,
+  videoRef,
+  inputText,
+  setInputText,
+  micStatus = 'idle',
 }) => {
   const progressPercentage = Math.min(
     100,
@@ -47,11 +59,11 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
           : "w-full max-w-[1200px] h-[85vh] min-h-[600px] app-card rounded-[24px] flex flex-col md:flex-row overflow-hidden relative shadow-2xl"
       }
     >
-      {/* Top Progress Bar + Question Label (Positioned absolutely over both columns) */}
+      {/* Top Progress Bar + Question Label */}
       <div className="absolute top-0 left-0 w-full z-20 flex flex-col">
         <div className="w-full h-1 bg-[#2C2C2E]">
           <div
-            className="h-full bg-[#F5F5F7] transition-all duration-300 ease-out"
+            className="h-full bg-[#30D158] transition-all duration-500 ease-out"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -59,10 +71,13 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
           <span className="text-[#8E8E93] text-[10px] font-medium uppercase tracking-widest">
             Question {questionIndex} of {totalQuestions}
           </span>
+          <span className="text-[#30D158] text-[10px] font-medium uppercase tracking-widest">
+            {Math.round(progressPercentage)}% Completed
+          </span>
         </div>
       </div>
 
-      {/* Left Column: Primary Interaction (InterviewStage) */}
+      {/* Left Column: Primary 3D Interaction Stage */}
       <InterviewStage
         appName={appName}
         pacingStatus={pacingStatus}
@@ -70,17 +85,23 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
         onEndInterview={onEndInterview}
         sphereState={sphereState}
         audioLevel={audioLevel}
+        videoRef={videoRef}
       />
 
       {/* Hairline Vertical Divider */}
       <div className="hidden md:block hairline-vertical h-full z-10 relative" />
 
-      {/* Right Column: Context / Transcript (TranscriptPanel) */}
+      {/* Right Column: Context / Transcript & Live Answer Bar */}
       <TranscriptPanel
         messages={messages}
         isListening={isListening}
         onToggleListening={onToggleListening}
         onRefreshMessage={onRefreshMessage}
+        onSubmitAnswer={onSubmitAnswer}
+        isSubmitting={isSubmitting}
+        inputText={inputText}
+        setInputText={setInputText}
+        micStatus={micStatus}
       />
     </main>
   );

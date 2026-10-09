@@ -3,6 +3,7 @@ import {
   SessionSummaryExport,
   SessionFullExport,
   Message,
+  AiDebrief,
 } from '../types/interview';
 import { downloadJson } from '../utils/sessionStorage';
 
@@ -15,6 +16,7 @@ interface ExportButtonsProps {
   totalQuestions: number;
   elapsedTime: string;
   messages: Message[];
+  aiDebrief?: AiDebrief;
 }
 
 export const ExportButtons: React.FC<ExportButtonsProps> = ({
@@ -26,15 +28,20 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({
   totalQuestions,
   elapsedTime,
   messages,
+  aiDebrief,
 }) => {
   const handleSaveSummary = () => {
-    // Build key takeaways from AI insights
-    const takeaways = messages
-      .filter((m) => m.role === 'ai' && m.insight)
-      .map((m) => m.insight!)
-      .slice(0, 8);
+    // Use AI strengths as takeaways when available; fall back to insights
+    const takeaways: string[] = aiDebrief?.strengths.length
+      ? [
+          ...aiDebrief.strengths,
+          `Hiring Recommendation: ${aiDebrief.hiring_recommendation}`,
+        ]
+      : messages
+          .filter((m) => m.role === 'ai' && m.insight)
+          .map((m) => m.insight!)
+          .slice(0, 8);
 
-    // If no insights, add placeholder takeaways
     const finalTakeaways =
       takeaways.length > 0
         ? takeaways
@@ -65,6 +72,8 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({
       totalQuestions,
       elapsedTime,
       messages,
+      // Include AI debrief when available — adds strengths, improvements, narrative, body-language
+      aiDebrief,
     };
 
     downloadJson(fullExport, `gethired-full-${sessionId}.json`);

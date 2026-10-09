@@ -20,6 +20,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRefresh
             {message.text}
           </p>
         </div>
+
+        {message.turnScores && (
+          <div className="flex items-center gap-2 mt-1 mr-1">
+            <span className="text-[10px] bg-[#1C1C1E] border border-[#2C2C2E] px-2 py-0.5 rounded text-[#30D158]">
+              Tech: {message.turnScores.technical}/10
+            </span>
+            <span className="text-[10px] bg-[#1C1C1E] border border-[#2C2C2E] px-2 py-0.5 rounded text-[#0A84FF]">
+              Comm: {message.turnScores.communication}/10
+            </span>
+            <span className="text-[10px] bg-[#1C1C1E] border border-[#2C2C2E] px-2 py-0.5 rounded text-[#FFD60A]">
+              Conf: {message.turnScores.confidence}/10
+            </span>
+          </div>
+        )}
       </div>
     );
   }
@@ -65,13 +79,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onRefresh
       </p>
 
       {message.insight && (
-        <div className="mt-4 pt-3 border-t border-[#2C2C2E]">
+        <div className="mt-3 pt-2.5 border-t border-[#2C2C2E]">
           <button
             onClick={() => setIsInsightExpanded(!isInsightExpanded)}
             className="flex items-center gap-1 text-[#8E8E93] hover:text-[#F5F5F7] text-[11px] font-medium transition-colors focus:outline-none group text-left w-full"
             aria-expanded={isInsightExpanded}
           >
-            <span>What this question is really testing</span>
+            <span className="text-[#30D158] font-medium">Feedback / Insight</span>
             <span
               className={`material-symbols-outlined text-[14px] transition-transform duration-200 ${
                 isInsightExpanded ? 'rotate-90 text-[#F5F5F7]' : 'rotate-0 text-[#8E8E93]'

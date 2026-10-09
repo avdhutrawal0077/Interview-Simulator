@@ -325,6 +325,111 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
         </div>
       </div>
 
+      {/* AI Debrief Section — renders only when backend report is available */}
+      {session.aiDebrief && (
+        <div className="mb-8 space-y-5">
+
+          {/* Hiring Recommendation Badge + Narrative */}
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#F5F5F7] text-[15px] font-semibold flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-[#BF5AF2]">psychology</span>
+                AI Interview Debrief
+              </h3>
+              <span
+                className="px-3 py-1 rounded-full text-[12px] font-bold tracking-wide"
+                style={{
+                  backgroundColor:
+                    session.aiDebrief.hiring_recommendation === 'Strong Yes' ? '#30D15820' :
+                    session.aiDebrief.hiring_recommendation === 'Yes' ? '#0A84FF20' :
+                    session.aiDebrief.hiring_recommendation === 'Maybe' ? '#FF9F0A20' : '#FF453A20',
+                  color:
+                    session.aiDebrief.hiring_recommendation === 'Strong Yes' ? '#30D158' :
+                    session.aiDebrief.hiring_recommendation === 'Yes' ? '#0A84FF' :
+                    session.aiDebrief.hiring_recommendation === 'Maybe' ? '#FF9F0A' : '#FF453A',
+                }}
+              >
+                {session.aiDebrief.hiring_recommendation}
+              </span>
+            </div>
+            <p className="text-[#C7C7CC] text-[14px] leading-relaxed">
+              {session.aiDebrief.debrief_narrative}
+            </p>
+          </div>
+
+          {/* Strengths & Improvements side-by-side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Strengths */}
+            <div className="bg-[#1C1C1E] border border-[#30D158]/30 rounded-[24px] p-6 shadow-xl">
+              <h4 className="text-[#30D158] text-[14px] font-semibold flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-[18px]">thumb_up</span>
+                Key Strengths
+              </h4>
+              <ul className="space-y-3">
+                {session.aiDebrief.strengths.map((s, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[13px] text-[#C7C7CC] leading-relaxed">
+                    <span className="mt-0.5 w-5 h-5 rounded-full bg-[#30D158]/15 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[13px] text-[#30D158]">check</span>
+                    </span>
+                    {s}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Improvements */}
+            <div className="bg-[#1C1C1E] border border-[#FF9F0A]/30 rounded-[24px] p-6 shadow-xl">
+              <h4 className="text-[#FF9F0A] text-[14px] font-semibold flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-[18px]">trending_up</span>
+                Actionable Improvements
+              </h4>
+              <ul className="space-y-3">
+                {session.aiDebrief.improvements.map((imp, i) => (
+                  <li key={i} className="flex items-start gap-3 text-[13px] text-[#C7C7CC] leading-relaxed">
+                    <span className="mt-0.5 w-5 h-5 rounded-full bg-[#FF9F0A]/15 flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-[13px] text-[#FF9F0A]">arrow_upward</span>
+                    </span>
+                    {imp}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Body Language Metrics */}
+          <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
+            <h4 className="text-[#F5F5F7] text-[14px] font-semibold flex items-center gap-2 mb-5">
+              <span className="material-symbols-outlined text-[18px] text-[#0A84FF]">visibility</span>
+              Non-Verbal Delivery (MediaPipe)
+            </h4>
+            <div className="space-y-4">
+              {([
+                { label: 'Eye Contact', value: session.aiDebrief.body_language.eye_contact, max: 100, unit: '%', color: '#0A84FF' },
+                { label: 'Head Stability', value: session.aiDebrief.body_language.head_stability, max: 100, unit: '%', color: '#30D158' },
+                { label: 'Blink Rate', value: Math.min(session.aiDebrief.body_language.blink_rate, 30), max: 30, unit: ' bpm', color: '#BF5AF2' },
+              ] as const).map((metric) => (
+                <div key={metric.label}>
+                  <div className="flex justify-between text-[12px] mb-1.5">
+                    <span className="text-[#8E8E93]">{metric.label}</span>
+                    <span className="text-[#F5F5F7] font-medium">
+                      {metric.label === 'Blink Rate'
+                        ? `${session.aiDebrief!.body_language.blink_rate.toFixed(1)}${metric.unit}`
+                        : `${metric.value.toFixed(1)}${metric.unit}`}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-[#2C2C2E] rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${(metric.value / metric.max) * 100}%`, backgroundColor: metric.color }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transcript Section */}
       <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
         <div className="flex items-center justify-between mb-5 pb-3 border-b border-[#2C2C2E]">
