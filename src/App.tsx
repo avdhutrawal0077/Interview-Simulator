@@ -53,7 +53,7 @@ function InterviewPage() {
   const [micStatus, setMicStatus] = useState<'active' | 'blocked' | 'unsupported' | 'idle'>('idle');
 
   // Initialize Speech Audio Hook (STT & TTS)
-  const { speak, stopSpeaking } = useSpeech({
+  const { speak, stopSpeaking, sendFinalize } = useSpeech({
     sessionId,
     onFinalTranscript: useCallback((text: string) => {
       // Append each finalized word chunk to committed text
@@ -148,9 +148,21 @@ function InterviewPage() {
   const elapsedTime = formatTime(seconds);
 
   const handleToggleListening = () => {
+    // FIX #10: Guard against toggling mic while an answer is being submitted.
+    if (isSubmitting) return;
+
     setIsListening((prev) => {
       const next = !prev;
       setSphereState(next ? 'listening' : 'idle');
+
+      if (!next) {
+        // User is turning the mic OFF — send finalize FIRST so the backend
+        // transcribes any audio buffered since the last VAD pause.
+        // This is the critical fix for: "I stopped mic but no text appeared."
+        sendFinalize();
+        // FIX #13: Reset committed text ref so next mic session starts fresh.
+        committedTextRef.current = '';
+      }
       return next;
     });
   };

@@ -90,7 +90,8 @@ async def websocket_transcribe(websocket: WebSocket, session_id: Optional[str] =
     audio_buffer = bytearray()
     last_interim_time = time.time()
     mime_type = "audio/webm"
-    is_transcribing = False
+    is_transcribing = False  # guards interim; finalize uses background tasks
+    pending_finalize = False  # prevents duplicate finalize requests
 
     try:
         while True:
@@ -131,14 +132,31 @@ async def websocket_transcribe(websocket: WebSocket, session_id: Optional[str] =
 
                     elif action == "finalize":
                         # Candidate paused or finished phrase: transcribe complete utterance buffer
-                        if len(audio_buffer) > 1000:
+                        # CRITICAL FIX: run transcription in a background task so the receive()
+                        # loop is NOT blocked. Previously this used `await asyncio.to_thread`
+                        # inline, which stalled the loop for 5-10 seconds while Gemini ran —
+                        # causing Vite proxy timeouts and the WebSocket to drop every time.
+                        if len(audio_buffer) > 1000 and not pending_finalize:
                             data_to_transcribe = bytes(audio_buffer)
                             audio_buffer = bytearray()  # Reset buffer for next sentence
                             last_interim_time = time.time()
+                            pending_finalize = True
 
-                            final_text = await asyncio.to_thread(_transcribe_audio_bytes, data_to_transcribe, mime_type)
-                            if final_text:
-                                await websocket.send_json({"type": "final", "text": final_text})
+                            async def run_finalize(data: bytes, m_type: str):
+                                nonlocal pending_finalize
+                                try:
+                                    final_text = await asyncio.to_thread(_transcribe_audio_bytes, data, m_type)
+                                    if final_text:
+                                        await websocket.send_json({"type": "final", "text": final_text})
+                                    else:
+                                        # Even if empty, signal the frontend the finalize completed
+                                        logger.debug("[STT WebSocket] Finalize returned empty transcription")
+                                except Exception as e:
+                                    logger.debug(f"[STT WebSocket] Finalize send error: {e}")
+                                finally:
+                                    pending_finalize = False
+
+                            asyncio.create_task(run_finalize(data_to_transcribe, mime_type))
                         else:
                             audio_buffer = bytearray()
 
