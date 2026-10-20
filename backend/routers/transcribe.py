@@ -45,8 +45,8 @@ _SAMPLE_RATE = 16000          # Hz
 _FRAME_SAMPLES = 512          # 32 ms @ 16 kHz
 _FRAME_BYTES = _FRAME_SAMPLES * 2   # PCM16 = 2 bytes/sample
 
-_VAD_SPEECH_THRESHOLD = 0.50  # Silero probability to treat as speech
-_VAD_SILENCE_THRESHOLD = 0.35 # Below this → silence
+_VAD_SPEECH_THRESHOLD = 0.65  # Silero probability to treat as speech (raised: 0.50→0.65 to reject background noise)
+_VAD_SILENCE_THRESHOLD = 0.45 # Below this → silence (raised: 0.35→0.45 for consistent hysteresis)
 
 # Pre-roll: keep N frames before speech onset to avoid clipping leading phonemes
 _PREROLL_FRAMES = 10          # 10 × 32 ms = 320 ms
@@ -154,6 +154,9 @@ async def websocket_transcribe(
         if session_id and session_id != "default" else None
     )
     name_corrector = build_corrector(_sess_for_corrector)
+
+    # ── Reset VAD LSTM state so prior-session residuals don't trigger false speech onset ──
+    stt.reset_vad()
 
     # ── Handshake ──────────────────────────────────────────────────────────
     if not stt.is_ready:

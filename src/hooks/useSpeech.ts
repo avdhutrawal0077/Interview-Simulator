@@ -262,14 +262,19 @@ export function useSpeech({
           retryCountRef.current  = 0;
           onMicStatusRef.current("active");
 
-          // Replay ALL buffered audio from the ring buffer.
+          // Replay only the last 3 seconds of audio — prevents flooding the backend
+          // with up to 30 s of ambient noise that accumulated before the user spoke.
+          const REPLAY_WINDOW_MS = 3000;
           const replayMs    = msg.resume_from_ms ?? resumeFromMs;
           const ringDuration = ringRef.current.durationMs;
           if (ringDuration > 0) {
-            const replayFrom = (replayMs > 0 && replayMs < ringDuration) ? replayMs : 0;
+            const windowStart = Math.max(0, ringDuration - REPLAY_WINDOW_MS);
+            const replayFrom  = Math.max(windowStart,
+              (replayMs > 0 && replayMs < ringDuration) ? replayMs : windowStart
+            );
             const buffered   = ringRef.current.bytesAfter(replayFrom);
             if (buffered.length > 0 && ws.readyState === WebSocket.OPEN) {
-              console.log(`[STT Client] Replaying ${buffered.length} bytes of pre-buffered audio`);
+              console.log(`[STT Client] Replaying last ${REPLAY_WINDOW_MS} ms of audio (${buffered.length} bytes)`);
               ws.send(buffered.buffer);
             }
           }
@@ -565,7 +570,17 @@ export function useSpeech({
   // ─── clearTranscript (called on turn submission) ──────────────────────────────
 
   const clearTranscript = useCallback(() => {
-    transcriptRef.current = { committedText: "", interimText: "", lastFinalSeq: 0 };
+    // Use a large sentinel seq so any in-flight final with a stale (low) seq is rejected
+    // by the transcript reducer guard and does NOT repopulate the cleared input box.
+    const sentinel = Date.now();
+    transcriptRef.current = { committedText: "", interimText: "", lastFinalSeq: sentinel };
+
+    // Tell the backend to flush its utterance buffer and reset Silero VAD state.
+    // Without this, the backend emits a final for the already-buffered garbage audio
+    // after the silence endpoint fires — repopulating the box the user just cleared.
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      try { wsRef.current.send(JSON.stringify({ type: "reset" })); } catch {}
+    }
   }, []);
 
   return {
