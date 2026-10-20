@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { Message } from '../types/interview';
-import { LiveDot } from './LiveDot';
 import { MessageBubble } from './MessageBubble';
 
 interface TranscriptPanelProps {
@@ -12,7 +11,7 @@ interface TranscriptPanelProps {
   isSubmitting?: boolean;
   inputText: string;
   setInputText: (text: string) => void;
-  micStatus?: 'active' | 'blocked' | 'unsupported' | 'idle';
+  micStatus?: 'active' | 'blocked' | 'unsupported' | 'idle' | 'reconnecting' | 'model_loading';
 }
 
 export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
@@ -60,6 +59,22 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
           : 'Microphone access was blocked. Please allow mic access in your browser settings, or type your answers below.',
       };
     }
+    if (micStatus === 'reconnecting') {
+      return {
+        bg: 'bg-[#FF9F0A]/10 border-[#FF9F0A]/30',
+        icon: 'wifi_off',
+        iconColor: 'text-[#FF9F0A]',
+        text: 'Connection lost — reconnecting… Your speech is preserved.',
+      };
+    }
+    if (micStatus === 'model_loading') {
+      return {
+        bg: 'bg-[#0A84FF]/10 border-[#0A84FF]/30',
+        icon: 'hourglass_empty',
+        iconColor: 'text-[#0A84FF]',
+        text: 'Loading speech model (first use only) — your audio is being buffered and will appear shortly.',
+      };
+    }
     if (micStatus === 'active') {
       return {
         bg: 'bg-[#30D158]/10 border-[#30D158]/30',
@@ -74,27 +89,8 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
   return (
     <aside className="w-full md:w-[400px] lg:w-[440px] h-full flex flex-col bg-[#1C1C1E] border-t md:border-t-0 border-[#2C2C2E] shrink-0">
       {/* Header */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-[#2C2C2E] select-none shrink-0">
+      <header className="px-6 py-4 flex items-center border-b border-[#2C2C2E] select-none shrink-0">
         <h2 className="text-[#F5F5F7] font-semibold text-base">Transcript</h2>
-
-        {/* Mic Toggle Button */}
-        <button
-          type="button"
-          onClick={onToggleListening}
-          disabled={isSubmitting || micStatus === 'unsupported'}
-          title={isListening ? 'Click to pause mic' : 'Click to activate mic'}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-            isListening
-              ? 'bg-[#30D158]/15 border-[#30D158]/40 text-[#30D158] hover:bg-[#30D158]/25'
-              : 'bg-[#2C2C2E] border-[#3A3A3C] text-[#8E8E93] hover:border-[#48484A] hover:text-[#F5F5F7]'
-          }`}
-        >
-          <LiveDot active={isListening} />
-          <span className="material-symbols-outlined text-[15px]">
-            {isListening ? 'mic' : 'mic_off'}
-          </span>
-          <span>{isListening ? 'Listening' : 'Mic Off'}</span>
-        </button>
       </header>
 
       {/* Mic status banner */}
@@ -148,7 +144,7 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
                   ? 'Evaluating answer...'
                   : isListening
                   ? 'Speak now — your words appear here in real time...'
-                  : 'Type your answer or click Mic Off to enable voice...'
+                  : 'Type your answer or click Start Mic below to use voice...'
               }
               disabled={isSubmitting}
               rows={3}
@@ -168,7 +164,7 @@ export const TranscriptPanel: React.FC<TranscriptPanelProps> = ({
             <button
               type="button"
               onClick={onToggleListening}
-              disabled={isSubmitting || micStatus === 'unsupported'}
+              disabled={isSubmitting || micStatus === 'unsupported' || micStatus === 'blocked'}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-[12px] font-medium transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 isListening
                   ? 'bg-[#FF453A]/15 border-[#FF453A]/40 text-[#FF453A] hover:bg-[#FF453A]/25'

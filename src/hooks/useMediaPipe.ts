@@ -228,12 +228,19 @@ export function useMediaPipe({ active, videoRef }: MediaPipeHookProps) {
 
     return () => {
       if (cameraRef.current) {
-        cameraRef.current.stop();
+        try { cameraRef.current.stop(); } catch {}
         cameraRef.current = null;
       }
       if (faceMeshRef.current) {
-        faceMeshRef.current.close();
+        try { faceMeshRef.current.close(); } catch {}
         faceMeshRef.current = null;
+      }
+      // Explicitly stop the video element's srcObject tracks so Windows
+      // releases the hardware handle before the next getUserMedia call.
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(t => t.stop());
+        videoRef.current.srcObject = null;
       }
       setCameraActive(false);
     };

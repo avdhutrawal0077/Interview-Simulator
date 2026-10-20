@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SessionFullExport, SessionSummary } from '../types/interview';
 
 interface ReportViewProps {
   session: SessionFullExport;
   roleSessions: SessionSummary[];
   onClose: () => void;
+  onDelete?: () => void;
 }
 
 /** Format ISO date to readable form */
@@ -23,24 +24,34 @@ function formatDate(iso: string): string {
   }
 }
 
-/** Score color based on value */
+/** Score color based on value (0-100 scale) */
 function scoreColor(score: number): string {
-  if (score >= 80) return '#30D158';
-  if (score >= 60) return '#FFD60A';
+  if (score >= 70) return '#30D158';
+  if (score >= 50) return '#FFD60A';
   return '#FF453A';
 }
 
-export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, onClose }) => {
+/** Score color for /10 scale */
+function scoreColor10(score: number): string {
+  if (score >= 7) return '#30D158';
+  if (score >= 5) return '#FFD60A';
+  return '#FF453A';
+}
+
+export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, onClose, onDelete }) => {
+  const [expandedTurn, setExpandedTurn] = useState<number | null>(null);
+
   // Sort role sessions chronologically for line chart
   const sortedRoleSessions = [...roleSessions].sort(
     (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
   );
 
+  // Use real category scores — NEVER fabricate from overallScore
   const catScores = session.categoryScores || {
     technical: session.overallScore,
-    communication: Math.min(100, session.overallScore + 4),
-    bodyLanguage: Math.max(50, session.overallScore - 3),
-    roleFit: Math.min(100, session.overallScore + 2),
+    communication: session.overallScore,
+    bodyLanguage: session.overallScore,
+    roleFit: session.overallScore,
   };
 
   // Pie chart categories configuration
@@ -87,6 +98,9 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
       ? `${pathD} L ${points[points.length - 1].x} ${chartH - paddingY} L ${points[0].x} ${chartH - paddingY} Z`
       : '';
 
+  // Per-question turn data (from backend report)
+  const turnData = session.aiDebrief?.turns ?? [];
+
   return (
     <div className="w-full h-full flex flex-col bg-[#0A0A0A] overflow-y-auto custom-scrollbar p-6 md:p-8">
       {/* Top Header Row */}
@@ -121,14 +135,28 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 bg-[#2C2C2E] hover:bg-[#343539] text-[#F5F5F7] border border-[#3A3A3C] rounded-xl text-[13px] font-medium transition-colors cursor-pointer flex items-center gap-1.5"
-        >
-          <span className="material-symbols-outlined text-[16px]">home</span>
-          Back to Home
-        </button>
+        <div className="flex items-center gap-2">
+          {onDelete && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Delete this report? This cannot be undone.')) onDelete();
+              }}
+              className="px-4 py-2 bg-[#FF453A]/10 hover:bg-[#FF453A]/20 text-[#FF453A] border border-[#FF453A]/30 rounded-xl text-[13px] font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[16px]">delete</span>
+              Delete
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 bg-[#2C2C2E] hover:bg-[#343539] text-[#F5F5F7] border border-[#3A3A3C] rounded-xl text-[13px] font-medium transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-[16px]">home</span>
+            Back to Home
+          </button>
+        </div>
       </div>
 
       {/* Analytics Section: Two Side-by-Side Charts */}
@@ -249,7 +277,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
               Sub-scores Breakdown
             </h3>
             <p className="text-[#8E8E93] text-[11px] mt-0.5">
-              Detailed category evaluations for this session
+              Real AI-evaluated category scores for this session
             </p>
           </div>
 
@@ -319,7 +347,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
           </div>
 
           <div className="text-[11px] text-[#8E8E93] pt-2 border-t border-[#2C2C2E]/60 flex items-center justify-between">
-            <span>Category breakdown</span>
+            <span>AI-evaluated categories</span>
             <span className="text-[#F5F5F7] font-medium">4 Core Dimensions</span>
           </div>
         </div>
@@ -396,6 +424,59 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
             </div>
           </div>
 
+          {/* Skill Gaps + Topic Coverage */}
+          {(session.aiDebrief.skill_gaps?.length || session.aiDebrief.topic_coverage) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Skill Gaps */}
+              {session.aiDebrief.skill_gaps && session.aiDebrief.skill_gaps.length > 0 && (
+                <div className="bg-[#1C1C1E] border border-[#FF453A]/30 rounded-[24px] p-6 shadow-xl">
+                  <h4 className="text-[#FF453A] text-[14px] font-semibold flex items-center gap-2 mb-4">
+                    <span className="material-symbols-outlined text-[18px]">warning</span>
+                    Identified Skill Gaps
+                  </h4>
+                  <ul className="space-y-2">
+                    {session.aiDebrief.skill_gaps.map((gap, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] text-[#C7C7CC]">
+                        <span className="text-[#FF453A] mt-0.5 shrink-0">•</span>
+                        {gap}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Topic Coverage */}
+              {session.aiDebrief.topic_coverage && (
+                <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
+                  <h4 className="text-[#F5F5F7] text-[14px] font-semibold flex items-center gap-2 mb-4">
+                    <span className="material-symbols-outlined text-[18px] text-[#0A84FF]">topic</span>
+                    Topic Coverage
+                  </h4>
+                  {session.aiDebrief.topic_coverage.covered_well && session.aiDebrief.topic_coverage.covered_well.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-[#30D158] text-[11px] font-semibold uppercase tracking-wider mb-2">Covered Well</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {session.aiDebrief.topic_coverage.covered_well.map((t, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-full bg-[#30D158]/15 text-[#30D158] text-[11px]">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {session.aiDebrief.topic_coverage.needs_improvement && session.aiDebrief.topic_coverage.needs_improvement.length > 0 && (
+                    <div>
+                      <p className="text-[#FF9F0A] text-[11px] font-semibold uppercase tracking-wider mb-2">Needs Improvement</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {session.aiDebrief.topic_coverage.needs_improvement.map((t, i) => (
+                          <span key={i} className="px-2 py-0.5 rounded-full bg-[#FF9F0A]/15 text-[#FF9F0A] text-[11px]">{t}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Body Language Metrics */}
           <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
             <h4 className="text-[#F5F5F7] text-[14px] font-semibold flex items-center gap-2 mb-5">
@@ -427,6 +508,86 @@ export const ReportView: React.FC<ReportViewProps> = ({ session, roleSessions, o
               ))}
             </div>
           </div>
+
+          {/* Per-Question Score Breakdown */}
+          {turnData.length > 0 && (
+            <div className="bg-[#1C1C1E] border border-[#2C2C2E] rounded-[24px] p-6 shadow-xl">
+              <h4 className="text-[#F5F5F7] text-[14px] font-semibold flex items-center gap-2 mb-5">
+                <span className="material-symbols-outlined text-[18px] text-[#BF5AF2]">analytics</span>
+                Per-Question Score Breakdown
+              </h4>
+              <div className="space-y-3">
+                {turnData.map((turn) => {
+                  const isExpanded = expandedTurn === turn.turnId;
+                  const tech = turn.scores?.technical ?? 0;
+                  const comm = turn.scores?.communication ?? 0;
+                  const conf = turn.scores?.confidence ?? 0;
+                  const avgTurn = Math.round((tech + comm + conf) / 3);
+
+                  return (
+                    <div
+                      key={turn.turnId}
+                      className="border border-[#2C2C2E] rounded-[16px] overflow-hidden"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedTurn(isExpanded ? null : turn.turnId)}
+                        className="w-full flex items-center justify-between p-4 bg-[#161618] hover:bg-[#1C1C1E] transition-colors cursor-pointer text-left"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0"
+                            style={{
+                              backgroundColor: `${scoreColor10(avgTurn)}20`,
+                              color: scoreColor10(avgTurn),
+                            }}
+                          >
+                            {turn.turnId}
+                          </span>
+                          <span className="text-[#C7C7CC] text-[13px] truncate">{turn.questionText}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 ml-4">
+                          <div className="flex items-center gap-2 text-[11px]">
+                            <span style={{ color: scoreColor10(tech) }}>T:{tech}</span>
+                            <span style={{ color: scoreColor10(comm) }}>C:{comm}</span>
+                            <span style={{ color: scoreColor10(conf) }}>X:{conf}</span>
+                          </div>
+                          <span className="material-symbols-outlined text-[16px] text-[#8E8E93]">
+                            {isExpanded ? 'expand_less' : 'expand_more'}
+                          </span>
+                        </div>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="p-4 border-t border-[#2C2C2E] bg-[#0D0D0D] space-y-3">
+                          <div>
+                            <p className="text-[#8E8E93] text-[11px] font-semibold uppercase tracking-wider mb-1">Answer</p>
+                            <p className="text-[#C7C7CC] text-[13px] leading-relaxed">{turn.transcript || '(no transcript)'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[#8E8E93] text-[11px] font-semibold uppercase tracking-wider mb-1">AI Feedback</p>
+                            <p className="text-[#C7C7CC] text-[13px] leading-relaxed">{turn.feedback}</p>
+                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            {[
+                              { label: 'Technical', val: tech, color: '#30D158' },
+                              { label: 'Communication', val: comm, color: '#0A84FF' },
+                              { label: 'Confidence', val: conf, color: '#BF5AF2' },
+                            ].map((sc) => (
+                              <div key={sc.label} className="bg-[#1C1C1E] rounded-xl p-3 text-center">
+                                <div className="text-[18px] font-bold" style={{ color: scoreColor10(sc.val) }}>{sc.val}/10</div>
+                                <div className="text-[10px] text-[#8E8E93] mt-0.5">{sc.label}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

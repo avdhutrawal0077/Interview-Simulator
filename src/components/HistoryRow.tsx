@@ -1,72 +1,73 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SessionSummary } from '../types/interview';
 
 interface HistoryRowProps {
   session: SessionSummary;
   isSelected?: boolean;
   onClick: () => void;
+  onDelete: () => void;
 }
 
-/** Format ISO date to short readable form */
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return iso;
-  }
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch { return iso; }
 }
 
-/** Score color based on value */
 function scoreColor(score: number): string {
-  if (score >= 80) return '#30D158';
-  if (score >= 60) return '#FFD60A';
+  if (score >= 70) return '#30D158';
+  if (score >= 45) return '#FFD60A';
   return '#FF453A';
 }
 
-export const HistoryRow: React.FC<HistoryRowProps> = ({ session, isSelected, onClick }) => {
+export const HistoryRow: React.FC<HistoryRowProps> = ({ session, isSelected, onClick, onDelete }) => {
+  const [showDelete, setShowDelete] = useState(false);
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`history-row w-full text-left px-3 py-2.5 flex items-center gap-2.5 rounded-lg transition-colors cursor-pointer select-none ${
-        isSelected
-          ? 'bg-[#2C2C2E] border border-[#3A3A3C]'
-          : 'hover:bg-[#1E1F23]'
+    <div
+      className={`history-row group w-full flex items-center gap-1 rounded-lg transition-colors ${
+        isSelected ? 'bg-[#2C2C2E] border border-[#3A3A3C]' : 'hover:bg-[#1E1F23]'
       }`}
+      onMouseEnter={() => setShowDelete(true)}
+      onMouseLeave={() => setShowDelete(false)}
     >
-      {/* Session indicator icon */}
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 border ${
-        isSelected ? 'bg-[#3A3A3C] border-[#8E8E93]/40' : 'bg-[#2C2C2E]/60 border-[#3A3A3C]/40'
-      }`}>
-        <span className="material-symbols-outlined text-[13px] text-[#8E8E93]">
-          description
-        </span>
-      </div>
-
-      {/* Date */}
-      <div className="flex-1 min-w-0">
-        <p className="text-[#F5F5F7] text-[12px] font-medium truncate">
-          {formatDate(session.date)}
-        </p>
-      </div>
-
-      {/* Score chip */}
-      <div
-        className="flex items-center gap-1 px-2 py-0.5 rounded-full shrink-0"
-        style={{ backgroundColor: `${scoreColor(session.overallScore)}1F` }}
+      {/* Main clickable area */}
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex-1 min-w-0 flex items-center gap-2 px-2.5 py-2 text-left cursor-pointer select-none"
       >
-        <span
-          className="text-[11px] font-semibold"
-          style={{ color: scoreColor(session.overallScore) }}
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+          isSelected ? 'bg-[#3A3A3C] border-[#8E8E93]/40' : 'bg-[#2C2C2E]/60 border-[#3A3A3C]/40'
+        }`}>
+          <span className="material-symbols-outlined text-[12px] text-[#8E8E93]">description</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[#F5F5F7] text-[11px] font-medium truncate">{formatDate(session.date)}</p>
+          <p className="text-[#636366] text-[9px]">{session.questionsCompleted}/{session.totalQuestions} questions</p>
+        </div>
+        <div
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded-full shrink-0"
+          style={{ backgroundColor: `${scoreColor(session.overallScore)}1F` }}
         >
-          {session.overallScore}%
-        </span>
-      </div>
-    </button>
+          <span className="text-[10px] font-semibold" style={{ color: scoreColor(session.overallScore) }}>
+            {session.overallScore}%
+          </span>
+        </div>
+      </button>
+
+      {/* Delete button — only visible on hover */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        title="Delete this report"
+        className={`shrink-0 w-6 h-6 mr-1.5 rounded flex items-center justify-center transition-all cursor-pointer ${
+          showDelete ? 'opacity-100 hover:bg-[#FF453A]/20' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <span className="material-symbols-outlined text-[14px] text-[#FF453A]">delete</span>
+      </button>
+    </div>
   );
 };

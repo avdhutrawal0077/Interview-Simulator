@@ -41,15 +41,36 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 80) -> list[str]
 def _parse_and_index_resume(session_id: str, raw_text: str) -> None:
     """
     Runs off the critical HTTP path — fires after the upload response is sent.
-    Parses resume with Gemini LLM and indexes chunks into ChromaDB for RAG.
+
+    Steps:
+      1. Parse resume structure with Gemini (name, skills, experience).
+      2. Update session with parsed data and candidate name.
+      3. Index raw text chunks into ChromaDB for semantic retrieval.
+      4. Extract structured interview-relevant features and index as feature documents.
     """
+    session = session_store.get_session(session_id)
+    role = (session or {}).get("role", "Software Engineer")
+
+    # Step 1: Structured parse
+    parsed_data: dict = {}
     try:
         parsed_data = ResumeParserService.parse_resume_to_structure(raw_text)
-        session_store.update_session(session_id, {"parsedResume": parsed_data})
+        updates: dict = {"parsedResume": parsed_data}
+
+        # Update candidate name if not already set
+        if session:
+            existing_name = session.get("candidateName", "").strip()
+            resume_name = parsed_data.get("name", "").strip()
+            if resume_name and (not existing_name or existing_name.lower() == "candidate"):
+                updates["candidateName"] = resume_name
+                logger.info(f"[BG Resume] Updated candidateName to '{resume_name}' from parsed resume")
+
+        session_store.update_session(session_id, updates)
         logger.info(f"[BG Resume] Gemini parse complete for session {session_id}")
     except Exception as e:
         logger.warning(f"[BG Resume] Gemini parse failed (non-fatal): {e}")
 
+    # Step 2: Index raw text chunks
     try:
         chunks = chunk_text(raw_text)
         if chunks:
@@ -58,9 +79,24 @@ def _parse_and_index_resume(session_id: str, raw_text: str) -> None:
                 texts=chunks,
                 metadatas=[{"type": "resume", "chunk_idx": i} for i in range(len(chunks))]
             )
-            logger.info(f"[BG Resume] Indexed {len(chunks)} chunks for session {session_id}")
+            logger.info(f"[BG Resume] Indexed {len(chunks)} raw chunks for session {session_id}")
     except Exception as e:
-        logger.warning(f"[BG Resume] ChromaDB indexing failed (non-fatal): {e}")
+        logger.warning(f"[BG Resume] ChromaDB raw chunk indexing failed (non-fatal): {e}")
+
+    # Step 3: Extract and index structured feature documents
+    try:
+        feature_docs = ResumeParserService.extract_rag_features(raw_text, role=role)
+        if feature_docs:
+            for feat in feature_docs:
+                rag_service.add_feature_document(
+                    session_id=session_id,
+                    feature_text=feat,
+                    doc_type="resume_feature",
+                    extra_meta={"role": role},
+                )
+            logger.info(f"[BG Resume] Indexed {len(feature_docs)} resume feature docs for session {session_id}")
+    except Exception as e:
+        logger.warning(f"[BG Resume] Feature extraction/indexing failed (non-fatal): {e}")
 
 
 # ─── Resume Upload ────────────────────────────────────────────────────────────

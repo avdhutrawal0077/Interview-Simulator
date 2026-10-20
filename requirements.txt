@@ -10,3 +10,11 @@ pdfplumber>=0.11.4
 python-docx>=1.1.2
 python-dotenv>=1.0.1
 httpx>=0.28.0
+# Local STT (faster-whisper + CTranslate2 CUDA backend + bundled Silero VAD)
+faster-whisper==1.1.1
+ctranslate2>=4.4.0
+numpy>=1.26.0
+onnxruntime>=1.17.0
+# Proper-noun post-correction (Indian English name/college/company mishearing fix)
+rapidfuzz>=3.0.0
+jellyfish>=1.0.0

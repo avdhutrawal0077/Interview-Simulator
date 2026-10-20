@@ -60,10 +60,10 @@ export interface TurnRecord {
   turnId: number;
   questionText: string;
   transcript: string;
-  bodyLanguageMetrics: {
-    eyeContact: number | null;
-    blinkRate: number | null;
-    headStability: number | null;
+  bodyLanguageMetrics?: {
+    eyeContact?: number;
+    blinkRate?: number;
+    headStability?: number;
   };
   scores: ScoreBreakdown;
   feedback: string;
@@ -76,6 +76,11 @@ export interface FinalReportResponse {
   improvements: string[];
   debrief_narrative: string;
   hiring_recommendation: string;
+  skill_gaps?: string[];
+  topic_coverage?: {
+    covered_well?: string[];
+    needs_improvement?: string[];
+  };
   turns: TurnRecord[];
   role: string;
   total_questions: number;

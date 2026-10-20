@@ -70,9 +70,15 @@ Thumbs.db
 
 # Documentation, Architecture, and Scratch Notes
 AI_Interview_Simulator_Architecture.pdf
+ARCHITECTURE.md
 myarchitecture.md
 myfutureplan.md
 EXECUTION_PLAN.md
 ROADMAP.md
 sphere.txt
 stitch_aura_ai_interview/
+
+# Local Whisper / STT model cache
+.cache/
+whisper_models/
+/models/

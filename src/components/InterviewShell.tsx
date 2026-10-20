@@ -20,9 +20,12 @@ interface InterviewShellProps {
   sphereState?: SphereState;
   audioLevel?: number;
   videoRef?: React.RefObject<HTMLVideoElement>;
+  cameraActive?: boolean;
+  cameraError?: string | null;
+  visionMetrics?: { eyeContact: number; blinkRate: number; headStability: number };
   inputText: string;
   setInputText: (text: string) => void;
-  micStatus?: 'active' | 'blocked' | 'unsupported' | 'idle';
+  micStatus?: 'active' | 'blocked' | 'unsupported' | 'idle' | 'reconnecting' | 'model_loading';
 }
 
 export const InterviewShell: React.FC<InterviewShellProps> = ({
@@ -42,6 +45,9 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
   sphereState = 'idle',
   audioLevel = 0,
   videoRef,
+  cameraActive,
+  cameraError,
+  visionMetrics,
   inputText,
   setInputText,
   micStatus = 'idle',
@@ -71,9 +77,26 @@ export const InterviewShell: React.FC<InterviewShellProps> = ({
           <span className="text-[#8E8E93] text-[10px] font-medium uppercase tracking-widest">
             Question {questionIndex} of {totalQuestions}
           </span>
-          <span className="text-[#30D158] text-[10px] font-medium uppercase tracking-widest">
-            {Math.round(progressPercentage)}% Completed
-          </span>
+          <div className="flex items-center gap-3">
+            {/* Camera / Vision status badge */}
+            {visionMetrics && cameraActive && (
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-[#8E8E93] bg-[#1C1C1E]/60 px-2 py-0.5 rounded-full border border-[#2C2C2E]/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#BF5AF2] animate-pulse"></span>
+                <span>Eye {visionMetrics.eyeContact}%</span>
+                <span className="text-[#3A3A3C]">|</span>
+                <span>Stab {visionMetrics.headStability}%</span>
+              </div>
+            )}
+            {cameraError && (
+              <div className="hidden sm:flex items-center gap-1 text-[10px] text-[#FF9F0A] bg-[#FF9F0A]/10 px-2 py-0.5 rounded-full border border-[#FF9F0A]/20">
+                <span className="material-symbols-outlined text-[11px]">videocam_off</span>
+                <span>No Camera</span>
+              </div>
+            )}
+            <span className="text-[#30D158] text-[10px] font-medium uppercase tracking-widest">
+              {Math.round(progressPercentage)}% Completed
+            </span>
+          </div>
         </div>
       </div>
 

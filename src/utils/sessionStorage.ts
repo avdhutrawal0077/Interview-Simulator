@@ -74,6 +74,17 @@ export function getFullSession(sessionId: string): SessionFullExport | null {
   }
 }
 
+/** Delete a single session by ID from history list and full data */
+export function deleteSession(sessionId: string): void {
+  try {
+    const history = getHistory().filter((s) => s.sessionId !== sessionId);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    localStorage.removeItem(SESSION_PREFIX + sessionId);
+  } catch {
+    // silently fail
+  }
+}
+
 /** Trigger a JSON file download in the browser */
 export function downloadJson(data: object, filename: string): void {
   const json = JSON.stringify(data, null, 2);

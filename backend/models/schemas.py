@@ -77,6 +77,10 @@ class AggregatedBodyLanguage(BaseModel):
     blink_rate: float
     head_stability: float
 
+class TopicCoverage(BaseModel):
+    covered_well: List[str] = []
+    needs_improvement: List[str] = []
+
 class FinalReportResponse(BaseModel):
     overall_scores: OverallScores
     body_language: AggregatedBodyLanguage
@@ -84,6 +88,8 @@ class FinalReportResponse(BaseModel):
     improvements: List[str]
     debrief_narrative: str
     hiring_recommendation: str
+    skill_gaps: List[str] = []
+    topic_coverage: Dict[str, Any] = {}
     turns: List[Dict[str, Any]]
     role: str
     total_questions: int

@@ -72,6 +72,19 @@ export interface AiDebrief {
   improvements: string[];
   debrief_narrative: string;
   hiring_recommendation: string;
+  skill_gaps?: string[];
+  topic_coverage?: {
+    covered_well?: string[];
+    needs_improvement?: string[];
+  };
+  turns?: Array<{
+    turnId: number;
+    questionText: string;
+    transcript: string;
+    scores: { technical: number; communication: number; confidence: number };
+    feedback: string;
+    bodyLanguageMetrics?: { eyeContact?: number; blinkRate?: number; headStability?: number };
+  }>;
 }
 
 /** Lightweight session summary for history sidebar */

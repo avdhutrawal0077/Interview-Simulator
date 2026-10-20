@@ -6,7 +6,7 @@ import { Message, JobRole, SessionSummary, SphereState, CategoryScores, AiDebrie
 import { generateSessionId, saveSession } from './utils/sessionStorage';
 import { api } from './services/api';
 import { useMediaPipe } from './hooks/useMediaPipe';
-import { useSpeech } from './hooks/useSpeech';
+import { useSpeech, MicStatus } from './hooks/useSpeech';
 
 /** Interview page — receives resumeFile, role, sessionId & initialQuestion via location state */
 function InterviewPage() {
@@ -36,38 +36,50 @@ function InterviewPage() {
   const [sphereState, setSphereState] = useState<SphereState>('idle');
   const [inputText, setInputText] = useState('');
 
-  // Video Ref for MediaPipe Webcam Feed
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Initialize MediaPipe Vision Tracking Hook
   const {
+    metrics: visionMetrics,
+    cameraActive,
+    error: cameraError,
     resetTurnMetrics,
     getAggregatedMetrics,
   } = useMediaPipe({
-    active: !showEndConfirmation && !isSubmitting,
+    active: true,  // Camera ON — real MediaPipe eye contact + blink detection
     videoRef,
   });
 
   // Separate committed (finalized) and interim (live preview) transcript text
   const committedTextRef = useRef('');
-  const [micStatus, setMicStatus] = useState<'active' | 'blocked' | 'unsupported' | 'idle'>('idle');
+  // Tracks whether the user has manually edited the input box this turn.
+  // When true, interim STT results are suppressed so they don't overwrite edits.
+  const userEditedRef = useRef(false);
+  const [micStatus, setMicStatus] = useState<MicStatus>('idle');
 
   // Initialize Speech Audio Hook (STT & TTS)
-  const { speak, stopSpeaking, sendFinalize } = useSpeech({
+  // onFinalTranscript and onInterimTranscript are managed inside useSpeech via
+  // the pure transcript reducer — callbacks here just sync React state.
+  const { speak, stopSpeaking, flushAndStop, clearTranscript, liveAudioLevel: micAudioLevel } = useSpeech({
     sessionId,
     onFinalTranscript: useCallback((text: string) => {
-      // Append each finalized word chunk to committed text
-      committedTextRef.current = committedTextRef.current
-        ? committedTextRef.current + ' ' + text
-        : text;
-      setInputText(committedTextRef.current);
+      // Reducer already concatenated; `text` is the full committed string.
+      // Guard: never wipe existing input with an empty string.
+      if (text.trim()) {
+        committedTextRef.current = text;
+        // A genuine final result always wins — it represents real speech.
+        // Reset the userEdited flag so future interim updates can flow through.
+        userEditedRef.current = false;
+        setInputText(text);
+      }
     }, []),
     onInterimTranscript: useCallback((text: string) => {
-      // Show live preview: committed words + current in-progress speech
-      const preview = committedTextRef.current
-        ? committedTextRef.current + ' ' + text
-        : text;
-      setInputText(preview);
+      // Skip interim update if the user has manually edited the box.
+      // This prevents in-flight Whisper results from overwriting their edits.
+      if (userEditedRef.current) return;
+      // `text` is committed + in-progress preview from reducer.
+      // Guard: never overwrite existing text with an empty interim flash.
+      if (text.trim()) {
+        setInputText(text);
+      }
     }, []),
     onMicStatus: setMicStatus,
     setSphereState,
@@ -148,23 +160,15 @@ function InterviewPage() {
   const elapsedTime = formatTime(seconds);
 
   const handleToggleListening = () => {
-    // FIX #10: Guard against toggling mic while an answer is being submitted.
     if (isSubmitting) return;
-
-    setIsListening((prev) => {
-      const next = !prev;
-      setSphereState(next ? 'listening' : 'idle');
-
-      if (!next) {
-        // User is turning the mic OFF — send finalize FIRST so the backend
-        // transcribes any audio buffered since the last VAD pause.
-        // This is the critical fix for: "I stopped mic but no text appeared."
-        sendFinalize();
-        // FIX #13: Reset committed text ref so next mic session starts fresh.
-        committedTextRef.current = '';
-      }
-      return next;
-    });
+    const next = !isListening;
+    setSphereState(next ? 'listening' : 'idle');
+    if (!next) {
+      // Muting: send finalize to flush buffered audio, then mute worklet.
+      // NOTE: committedTextRef is NOT reset here — preserved until answer submit.
+      flushAndStop();
+    }
+    setIsListening(next);
   };
 
   const handleRefreshMessage = async (id: string) => {
@@ -255,7 +259,9 @@ function InterviewPage() {
       const nextQ = res.nextQuestion;
       setQuestionIndex(nextQ.questionId);
       setInputText('');
-      committedTextRef.current = '';  // reset spoken text for next turn
+      committedTextRef.current = '';
+      userEditedRef.current = false;  // reset for new turn — STT can flow again
+      clearTranscript();  // reset STT reducer for next turn
       resetTurnMetrics();
 
       setMessages((prev) => [
@@ -294,13 +300,8 @@ function InterviewPage() {
   // Compile full session summary, fetch AI debrief, then persist and navigate
   const handleFinishInterview = useCallback(async () => {
     stopSpeaking();
-    const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 7.5);
-    const techAvg = Math.round(avg(scoresHistory.tech) * 10);
-    const commAvg = Math.round(avg(scoresHistory.comm) * 10);
-    const confAvg = Math.round(avg(scoresHistory.conf) * 10);
-    const overallScore = Math.round((techAvg + commAvg + confAvg) / 3);
 
-    // Fetch AI debrief from backend — non-blocking, falls back to null
+    // Fetch AI debrief from backend — this has the REAL scores from background evaluation
     let aiDebrief: AiDebrief | undefined;
     try {
       const reportData = await api.getFinalReport(sessionId);
@@ -312,26 +313,47 @@ function InterviewPage() {
           improvements: reportData.improvements,
           debrief_narrative: reportData.debrief_narrative,
           hiring_recommendation: reportData.hiring_recommendation,
+          skill_gaps: reportData.skill_gaps,
+          topic_coverage: reportData.topic_coverage,
+          turns: reportData.turns,
         };
       }
     } catch (e) {
       console.warn('getFinalReport failed, continuing without AI debrief:', e);
     }
 
-    // Use AI scores if available, otherwise fall back to local averages
-    const categoryScores: CategoryScores = aiDebrief
-      ? {
-          technical:     Math.round(aiDebrief.overall_scores.technical * 10),
-          communication: Math.round(aiDebrief.overall_scores.communication * 10),
-          bodyLanguage:  Math.round(aiDebrief.body_language.eye_contact),
-          roleFit:       Math.round(aiDebrief.overall_scores.role_fit * 10),
-        }
-      : {
-          technical:     techAvg || 75,
-          communication: commAvg || 80,
-          bodyLanguage:  confAvg || 82,
-          roleFit:       Math.min(100, overallScore + 3),
-        };
+    // Use real AI scores for overallScore (multiply by 10 to convert /10 → /100)
+    // Fall back to local score averages only if the backend report is unavailable
+    const avg = (arr: number[]) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 7.5);
+    let overallScore: number;
+    let categoryScores: CategoryScores;
+
+    if (aiDebrief) {
+      // Real scores from backend evaluation
+      const techScore  = Math.round(aiDebrief.overall_scores.technical * 10);
+      const commScore  = Math.round(aiDebrief.overall_scores.communication * 10);
+      const confScore  = Math.round(aiDebrief.overall_scores.confidence * 10);
+      const fitScore   = Math.round(aiDebrief.overall_scores.role_fit * 10);
+      overallScore = Math.round((techScore + commScore + confScore) / 3);
+      categoryScores = {
+        technical:     techScore,
+        communication: commScore,
+        bodyLanguage:  Math.round(aiDebrief.body_language.eye_contact),   // eye contact % is already 0-100
+        roleFit:       fitScore,
+      };
+    } else {
+      // Fallback: local placeholder scores (will be low since backend eval is async)
+      const techAvg = Math.round(avg(scoresHistory.tech) * 10);
+      const commAvg = Math.round(avg(scoresHistory.comm) * 10);
+      const confAvg = Math.round(avg(scoresHistory.conf) * 10);
+      overallScore = Math.round((techAvg + commAvg + confAvg) / 3) || 60;
+      categoryScores = {
+        technical:     techAvg || 60,
+        communication: commAvg || 65,
+        bodyLanguage:  confAvg || 70,
+        roleFit:       Math.min(100, overallScore + 5),
+      };
+    }
 
     const summary: SessionSummary = {
       sessionId,
@@ -371,18 +393,19 @@ function InterviewPage() {
     handleFinishInterview();
   };
 
-  // Generate dynamic mock audio level while speaking to animate sphere
-  const [liveAudioLevel, setLiveAudioLevel] = useState(0);
+  // Audio level: real mic level from hook while listening, mock oscillation while speaking
+  const [speakingLevel, setSpeakingLevel] = useState(0);
   useEffect(() => {
     if (sphereState !== 'speaking') {
-      setLiveAudioLevel(0);
+      setSpeakingLevel(0);
       return;
     }
     const interval = setInterval(() => {
-      setLiveAudioLevel(Math.random() * 0.4 + 0.3); // mock amplitude oscillation
+      setSpeakingLevel(Math.random() * 0.4 + 0.3);
     }, 100);
     return () => clearInterval(interval);
   }, [sphereState]);
+  const liveAudioLevel = sphereState === 'speaking' ? speakingLevel : micAudioLevel;
 
   return (
     <div className="w-screen h-screen min-h-screen overflow-hidden bg-[#0A0A0A] relative flex flex-col items-center justify-center p-0">
@@ -401,12 +424,17 @@ function InterviewPage() {
         isSubmitting={isSubmitting}
         onEndInterview={handleRequestEndInterview}
         sphereState={sphereState}
-        audioLevel={sphereState === 'speaking' ? liveAudioLevel : (isListening ? 0.15 : 0)}
+        audioLevel={liveAudioLevel}
         videoRef={videoRef}
+        cameraActive={cameraActive}
+        cameraError={cameraError}
+        visionMetrics={visionMetrics}
         inputText={inputText}
         setInputText={(text) => {
-          // When user manually types, sync committed ref too
+          // When user manually types/edits, sync committed ref and flag that
+          // interim STT updates should be suppressed until next final result.
           committedTextRef.current = text;
+          userEditedRef.current = true;
           setInputText(text);
         }}
         micStatus={micStatus}
